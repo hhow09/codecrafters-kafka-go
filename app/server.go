@@ -30,8 +30,12 @@ func handleConn(conn net.Conn) {
 	defer conn.Close()
 	header, err := wireprotocol.ReadRequestHeaderV2(conn)
 	if err != nil {
+		if apiErr, ok := err.(wireprotocol.APIError); ok {
+			conn.Write(wireprotocol.ResponseV0(header.CorrelationID, apiErr.Code()))
+			return
+		}
 		fmt.Println("Error reading from connection: ", err.Error())
 		os.Exit(1)
 	}
-	conn.Write(wireprotocol.ResponseHeaderV0(header.CorrelationID))
+	conn.Write(wireprotocol.ResponseV0(header.CorrelationID, nil))
 }
